@@ -23,11 +23,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +49,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,6 +112,9 @@ fun CalendarScreen() {
     val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
     var english by rememberSaveable { mutableStateOf(prefs.getString("language", "am") == "en") }
     val lang = if (english) Language.ENGLISH else Language.AMHARIC
+    var showMonthYearPicker by rememberSaveable { mutableStateOf(false) }
+    var pickerYearText by rememberSaveable { mutableStateOf(today.year.toString()) }
+    var pickerMonth by rememberSaveable { mutableIntStateOf(today.month) }
 
     fun goPrevious() {
         if (month == 1) {
@@ -164,7 +171,14 @@ fun CalendarScreen() {
                 TextButton(onClick = { goPrevious() }) {
                     Text("‹", fontSize = 32.sp)
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable {
+                        pickerYearText = year.toString()
+                        pickerMonth = month
+                        showMonthYearPicker = true
+                    }
+                ) {
                     Text(
                         text = "${Labels.ethiopianMonth(lang, month)} $year",
                         fontSize = 24.sp,
@@ -282,6 +296,137 @@ fun CalendarScreen() {
             }
 
             Spacer(Modifier.height(8.dp))
+        }
+
+        if (showMonthYearPicker) {
+            val parsedPickerYear = pickerYearText.toIntOrNull()
+            AlertDialog(
+                onDismissRequest = { showMonthYearPicker = false },
+                title = {
+                    Text(if (english) "Go to date" else "ወደ ቀን ይሂዱ")
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (english) "Year" else "ዓመት",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    val current = pickerYearText.toIntOrNull() ?: year
+                                    if (current > 1) pickerYearText = (current - 1).toString()
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("−") }
+
+                            OutlinedTextField(
+                                value = pickerYearText,
+                                onValueChange = { value ->
+                                    if (value.length <= 5 && value.all { it.isDigit() }) {
+                                        pickerYearText = value
+                                    }
+                                },
+                                modifier = Modifier.weight(2f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = { Text(if (english) "Ethiopian year" else "ዓመት") }
+                            )
+
+                            OutlinedButton(
+                                onClick = {
+                                    val current = pickerYearText.toIntOrNull() ?: year
+                                    if (current < 99999) pickerYearText = (current + 1).toString()
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("+") }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = if (english) "Month" else "ወር",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Spacer(Modifier.height(8.dp))
+
+                        for (row in 0 until 5) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                for (col in 0 until 3) {
+                                    val monthOption = row * 3 + col + 1
+                                    if (monthOption <= 13) {
+                                        val selected = pickerMonth == monthOption
+                                        if (selected) {
+                                            Button(
+                                                onClick = { pickerMonth = monthOption },
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                                    horizontal = 4.dp,
+                                                    vertical = 8.dp
+                                                )
+                                            ) {
+                                                Text(
+                                                    Labels.ethiopianMonth(lang, monthOption),
+                                                    fontSize = 12.sp,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+                                        } else {
+                                            OutlinedButton(
+                                                onClick = { pickerMonth = monthOption },
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                                    horizontal = 4.dp,
+                                                    vertical = 8.dp
+                                                )
+                                            ) {
+                                                Text(
+                                                    Labels.ethiopianMonth(lang, monthOption),
+                                                    fontSize = 12.sp,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        Spacer(Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (parsedPickerYear != null && parsedPickerYear >= 1) {
+                                year = parsedPickerYear
+                                month = pickerMonth
+                                selectedJdn = EthiopianCalendar.toJdn(year, month, 1)
+                                showMonthYearPicker = false
+                            }
+                        },
+                        enabled = parsedPickerYear != null && parsedPickerYear >= 1
+                    ) {
+                        Text(if (english) "Go" else "ሂድ")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showMonthYearPicker = false }) {
+                        Text(if (english) "Cancel" else "ይቅር")
+                    }
+                }
+            )
         }
     }
 }
