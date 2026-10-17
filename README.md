@@ -3,7 +3,8 @@
 A simple Android calendar app that shows the Ethiopian calendar (13 months), with:
 
 - Month view with Ethiopian day numbers and the Gregorian day in small print
-- Month names and weekday names in Amharic and English
+- Opens in Amharic (the original). Tap **In English** at the top to switch everything to English
+  (months, weekdays, dates, holidays, buttons), and **አማርኛ** to switch back. Your choice is remembered.
 - Previous / next month buttons and a "Today" button
 - Tap any day to see its full Ethiopian and Gregorian date
 - Major public holidays marked with a dot (see note below)
@@ -51,6 +52,7 @@ before relying on it.
 ## Where things are
 
 - `app/src/main/java/com/example/ethiopiancalendar/EthiopianCalendar.kt`: date conversion
+- `app/src/main/java/com/example/ethiopiancalendar/Labels.kt`: all text, in Amharic and English
 - `app/src/main/java/com/example/ethiopiancalendar/Holidays.kt`: holiday list
 - `app/src/main/java/com/example/ethiopiancalendar/MainActivity.kt`: the screen
 - `.github/workflows/build.yml`: tells GitHub how to build the app

@@ -14,24 +14,7 @@ object EthiopianCalendar {
     private const val JDN_OFFSET = 1723856
     private const val UNIX_EPOCH_JDN = 2440588
 
-    val monthNames = listOf(
-        "Meskerem", "Tikimt", "Hidar", "Tahsas", "Tir", "Yekatit", "Megabit",
-        "Miazia", "Ginbot", "Sene", "Hamle", "Nehase", "Pagume"
-    )
-
-    val monthNamesAmharic = listOf(
-        "መስከረም", "ጥቅምት", "ኅዳር", "ታኅሣሥ", "ጥር", "የካቲት", "መጋቢት",
-        "ሚያዝያ", "ግንቦት", "ሰኔ", "ሐምሌ", "ነሐሴ", "ጳጉሜን"
-    )
-
-    /** Index 0 = Sunday. */
-    val weekdayNames = listOf("Ehud", "Segno", "Maksegno", "Rebu", "Hamus", "Arb", "Qidame")
-
-    val weekdayNamesAmharic = listOf("እሑድ", "ሰኞ", "ማክሰኞ", "ረቡዕ", "ሐሙስ", "አርብ", "ቅዳሜ")
-
-    val weekdayShortAmharic = listOf("እሑድ", "ሰኞ", "ማክሰ", "ረቡዕ", "ሐሙስ", "አርብ", "ቅዳሜ")
-
-    val weekdayShortEnglish = listOf("Ehu", "Seg", "Mak", "Reb", "Ham", "Arb", "Qid")
+    // Month and weekday names live in Labels.kt, so this file only holds the date maths.
 
     /** Every 4th year is a leap year (year 3, 7, 11 ...): Pagume then has 6 days. */
     fun isLeapYear(year: Int): Boolean = Math.floorMod(year, 4) == 3

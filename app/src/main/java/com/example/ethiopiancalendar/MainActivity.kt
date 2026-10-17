@@ -1,5 +1,6 @@
 package com.example.ethiopiancalendar
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +37,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -42,11 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,6 +103,12 @@ fun CalendarScreen() {
     var month by rememberSaveable { mutableIntStateOf(today.month) }
     var selectedJdn by rememberSaveable { mutableIntStateOf(todayJdn) }
 
+    // Language: Amharic is the original; the choice is remembered between launches.
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+    var english by rememberSaveable { mutableStateOf(prefs.getString("language", "am") == "en") }
+    val lang = if (english) Language.ENGLISH else Language.AMHARIC
+
     fun goPrevious() {
         if (month == 1) {
             year -= 1
@@ -125,13 +134,7 @@ fun CalendarScreen() {
 
     val firstGreg = EthiopianCalendar.toLocalDate(firstJdn)
     val lastGreg = EthiopianCalendar.toLocalDate(firstJdn + daysInMonth - 1)
-    val shortFormat = DateTimeFormatter.ofPattern("MMM d")
-    val fullFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
-    val gregorianRange = if (firstGreg.year == lastGreg.year) {
-        "${firstGreg.format(shortFormat)} – ${lastGreg.format(fullFormat)}"
-    } else {
-        "${firstGreg.format(fullFormat)} – ${lastGreg.format(fullFormat)}"
-    }
+    val gregorianRange = Labels.gregorianRange(lang, firstGreg, lastGreg)
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -140,6 +143,18 @@ fun CalendarScreen() {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
+            // Language button: "In English" while in Amharic, "አማርኛ" while in English
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                OutlinedButton(
+                    onClick = {
+                        english = !english
+                        prefs.edit().putString("language", if (english) "en" else "am").apply()
+                    }
+                ) {
+                    Text(Labels.languageButton(lang))
+                }
+            }
+
             // Month header with previous / next buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -151,15 +166,10 @@ fun CalendarScreen() {
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "${EthiopianCalendar.monthNames[month - 1]} $year",
+                        text = "${Labels.ethiopianMonth(lang, month)} $year",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "${EthiopianCalendar.monthNamesAmharic[month - 1]} $year",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = gregorianRange,
@@ -182,17 +192,11 @@ fun CalendarScreen() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = EthiopianCalendar.weekdayShortAmharic[i],
+                            text = Labels.weekdayShort(lang, i),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = EthiopianCalendar.weekdayShortEnglish[i],
-                            fontSize = 10.sp,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.65f)
                         )
                     }
                 }
@@ -240,31 +244,22 @@ fun CalendarScreen() {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "${EthiopianCalendar.weekdayNames[weekday]}, " +
-                            "${EthiopianCalendar.monthNames[selectedEth.month - 1]} " +
-                            "${selectedEth.day}, ${selectedEth.year}",
+                        text = Labels.ethiopianLong(lang, selectedEth, weekday),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        text = "${EthiopianCalendar.weekdayNamesAmharic[weekday]}፣ " +
-                            "${EthiopianCalendar.monthNamesAmharic[selectedEth.month - 1]} " +
-                            "${selectedEth.day} ${selectedEth.year}",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "Gregorian: " +
-                            selectedGreg.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")),
+                        text = "${Labels.gregorianTitle(lang)}: " +
+                            Labels.gregorianLong(lang, selectedGreg),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
-                    for (name in holidays) {
+                    for (holiday in holidays) {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = "★ $name",
+                            text = "★ ${holiday.name(lang)}",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.tertiary
@@ -283,7 +278,7 @@ fun CalendarScreen() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Today  ·  ዛሬ")
+                Text(Labels.todayButton(lang))
             }
 
             Spacer(Modifier.height(8.dp))
